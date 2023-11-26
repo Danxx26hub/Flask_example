@@ -22,3 +22,14 @@ def name():
         return jsonify(all_data)
     except IndexError as ie:
         return f"{abort(404)} : {ie}"
+    
+
+@app.route('/album/<num>')
+def album(num):
+    """uses new style sqlalchemy query"""
+    num = int(num)
+    album_num = db.session.scalars(db.select(albums).where(albums.AlbumId == num)).all()
+    if album_num:
+        return jsonify(album_num)
+    else:
+        abort(404)
