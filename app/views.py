@@ -2,7 +2,7 @@ from app import app
 from flask import request, render_template, abort, jsonify, abort
 from sqlalchemy.sql.operators import ilike_op, like_op
 from sqlalchemy import text
-from app.models import db, artists, albums, employees
+from app.models import db, artists, albums, employees, customers
 
 
 @app.route("/test")
@@ -71,3 +71,16 @@ def employeedata(directs):
     filter_data = db.session.scalars(db.select(employees).filter_by(ReportsTo=directs)).all()
     print(filter_data)
     return render_template("employees.html", data=data, directs=directs ,filter_data=filter_data)
+
+
+@app.route("/customers/<id>", methods=["GET", "POST"])
+def customer(id) -> str:
+    """get the customer by ID and display the support rep for that customer"""
+    try:
+        data = customers.query.filter_by(CustomerId=id).all()
+        support_rep = employees.query.filter_by(EmployeeId=data[0].SupportRepId).one()
+        print(support_rep)
+    except IndexError as ie:
+        return f"{abort(404)} : {ie}"
+    else:
+        return render_template("customers.html", data=data, support_rep=support_rep)
