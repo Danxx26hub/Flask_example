@@ -2,6 +2,6 @@ __pycache__
 .env
 venv/
 env/
- 
-
-
+*.key
+*.crt
+*.pem

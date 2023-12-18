@@ -2,7 +2,7 @@ from app import app
 from flask import request, render_template, abort, jsonify, abort
 from sqlalchemy.sql.operators import ilike_op, like_op
 from sqlalchemy import text
-from app.models import db, artists, albums
+from app.models import db, artists, albums, employees
 
 
 @app.route("/test")
@@ -51,8 +51,23 @@ def artist(name):
 def match(name):
     """example query using new style that demonstrates a where and ilike query combined"""
     artist_to_albums = db.session.scalars(
-        db.select(albums, artists).where(
-            artists.ArtistId == albums.ArtistId, ilike_op(artists.Name, f"%{name}%")
+        db.Query(albums)
+        .join(artists, isouter=False)
+       
+        .filter(artists.ArtistId == albums.ArtistId)
+        .where(
+             ilike_op(artists.Name, f"%{name}%")
         )
     ).all()
+    print(artist_to_albums)
     return jsonify(artist_to_albums)
+
+
+@app.route("/employees/<directs>")
+def employeedata(directs):
+    data = employees.query.all()
+    # db.session.scalars(db.select(User).where(User.name != "Anthony")).all()
+    #db.session.scalars(db.select(User).filter_by(name="Anthony")).first()
+    filter_data = db.session.scalars(db.select(employees).filter_by(ReportsTo=directs)).all()
+    print(filter_data)
+    return render_template("employees.html", data=data, directs=directs ,filter_data=filter_data)
