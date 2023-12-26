@@ -1,0 +1,45 @@
+
+
+
+
+
+
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    $.ajax({
+        url: "/getcustomers",
+        type: "get",
+        dataType: "json",
+        async: true,
+         success: function(response) {
+            var arr = [];
+            var pdata = "";
+            for (var i = 0; i < response.length; i++) {
+                arr.push(response[i].FirstName + ", " + response[i].LastName);
+                
+            }
+          var availableTags;
+          availableTags = arr;
+          $("#status").html({
+            source: availableTags,
+          });
+          console.log(arr);
+         },
+         error: function(pdata, status, xhr) {
+          //Do Something to handle error
+          console.log('error')
+         }
+       });
+});
+    </script>
+
+
+
+
+<div>
+    <p id="status">items</p>
+</div>

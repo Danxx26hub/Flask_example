@@ -1,5 +1,6 @@
 from app import app
-from flask import request, render_template, abort, jsonify, abort
+from app import cache
+from flask import request, render_template, abort, jsonify, abort, current_app
 from sqlalchemy.sql.operators import ilike_op, like_op
 from sqlalchemy import text
 from app.models import db, artists, albums, employees, customers
@@ -18,11 +19,12 @@ def name():
     # data = db.session.scalars(db.select(albums, artists).where(albums.AlbumId == num and(albums.ArtistId == artists.ArtistId ))).all()
     try:
         data = artists.query.filter(artists.ArtistId == num).all()
-
+        current_app.logger.info(data)
         album = albums.query.filter(albums.ArtistId == data[0].ArtistId).all()
         all_data = {"artist": data, "album": album}
         return jsonify(all_data)
     except IndexError as ie:
+        current_app.logger.error(ie)
         return f"{abort(404)} : {ie}"
 
 
@@ -53,24 +55,27 @@ def match(name):
     artist_to_albums = db.session.scalars(
         db.Query(albums)
         .join(artists, isouter=False)
-       
         .filter(artists.ArtistId == albums.ArtistId)
-        .where(
-             ilike_op(artists.Name, f"%{name}%")
-        )
+        .where(ilike_op(artists.Name, f"%{name}%"))
     ).all()
     print(artist_to_albums)
     return jsonify(artist_to_albums)
 
 
 @app.route("/employees/<directs>")
+@cache.cached(timeout=50)
 def employeedata(directs):
     data = employees.query.all()
     # db.session.scalars(db.select(User).where(User.name != "Anthony")).all()
-    #db.session.scalars(db.select(User).filter_by(name="Anthony")).first()
-    filter_data = db.session.scalars(db.select(employees).filter_by(ReportsTo=directs)).all()
-    print(filter_data)
-    return render_template("employees.html", data=data, directs=directs ,filter_data=filter_data)
+    # db.session.scalars(db.select(User).filter_by(name="Anthony")).first()
+
+    filter_data = db.session.scalars(
+        db.select(employees).filter_by(ReportsTo=directs)
+    ).all()
+    current_app.logger.info("accessed employee data")
+    return render_template(
+        "employees.html", data=data, directs=directs, filter_data=filter_data
+    )
 
 
 @app.route("/customers/<id>", methods=["GET", "POST"])
@@ -84,3 +89,16 @@ def customer(id) -> str:
         return f"{abort(404)} : {ie}"
     else:
         return render_template("customers.html", data=data, support_rep=support_rep)
+
+
+@app.route("/getcustomers", methods=["GET", "POST"])
+def get_names():
+    """get all the customers and display them"""
+    data = customers.query.all()
+
+    return jsonify(data)
+
+
+@app.route("/ajax", methods=["GET", "POST"])
+def get_ajax():
+    return render_template("ajax.html")
